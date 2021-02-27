@@ -16,6 +16,8 @@
 import '../types/webxr.js';
 
 import {Event as ThreeEvent, EventDispatcher, Matrix4, PerspectiveCamera, Ray, Vector3, WebGLRenderer} from 'three';
+//@ts-ignore
+import {XREstimatedLight} from 'three/examples/jsm/webxr/XREstimatedLight.js';
 
 import {$onResize} from '../model-viewer-base.js';
 import {assertIsArCandidate} from '../utilities.js';
@@ -108,9 +110,23 @@ export class ARRenderer extends EventDispatcher {
   constructor(private renderer: Renderer) {
     super();
     this.threeRenderer = renderer.threeRenderer;
+    this.threeRenderer.xr.enabled = true;
     // Turn this off, as the matrix is set directly from webXR rather than using
     // postion, rotation, scale.
     this.camera.matrixAutoUpdate = false;
+
+    const xrLight = new XREstimatedLight(this.threeRenderer, false);
+
+    xrLight.addEventListener('estimationstart', () => {
+      const scene = this.presentedScene!;
+      scene.environment = null;
+      scene.add(xrLight);
+    });
+
+    xrLight.addEventListener('estimationend', () => {
+      const scene = this.presentedScene!;
+      scene.remove(xrLight);
+    });
   }
 
   async resolveARSession(scene: ModelScene): Promise<XRSession> {
@@ -119,7 +135,7 @@ export class ARRenderer extends EventDispatcher {
     const session: XRSession =
         await navigator.xr!.requestSession!('immersive-ar', {
           requiredFeatures: ['hit-test'],
-          optionalFeatures: ['dom-overlay'],
+          optionalFeatures: ['dom-overlay', 'light-estimation'],
           domOverlay:
               {root: scene.element.shadowRoot!.querySelector('div.default')}
         });
