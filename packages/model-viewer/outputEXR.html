@@ -1,0 +1,1065 @@
+<!--
+/* @license
+ * Copyright 2019 Google Inc. All Rights Reserved.
+ * Licensed under the Apache License, Version 2.0 (the 'License');
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an 'AS IS' BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+-->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>&lt;model-viewer&gt; Interactive Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+</head>
+<body>
+    <!-- <script type="module" src="../node_modules/three/build/three.module.js"></script> -->
+    <script type="module">
+      import * as THREE from './node_modules/three/build/three.module.js';
+      import * as fflate from './node_modules/three/examples/jsm/libs/fflate.module.js';
+
+      // -----------------------------------------------------------------------------
+
+class EnvironmentSceneAlt extends THREE.Scene {
+    constructor() {
+        super();
+        this.position.y = -3.5;
+        const geometry = new THREE.BoxBufferGeometry();
+        geometry.deleteAttribute('uv');
+        const roomMaterial = new THREE.MeshStandardMaterial({ metalness: 0, side: THREE.BackSide });
+        const boxMaterial = new THREE.MeshStandardMaterial({ metalness: 0 });
+        const mainLight = new THREE.PointLight(0xffffff, 400.0, 28, 2);
+        mainLight.position.set(0.5, 14.0, 0.5);
+        this.add(mainLight);
+        const room = new THREE.Mesh(geometry, roomMaterial);
+        room.position.set(0.0, 13.2, 0.0);
+        room.scale.set(31.5, 28.5, 31.5);
+        this.add(room);
+        const box1 = new THREE.Mesh(geometry, boxMaterial);
+        box1.position.set(-10.906, -1.0, 1.846);
+        box1.rotation.set(0, -0.195, 0);
+        box1.scale.set(2.328, 7.905, 4.651);
+        this.add(box1);
+        const box2 = new THREE.Mesh(geometry, boxMaterial);
+        box2.position.set(-5.607, -0.754, -0.758);
+        box2.rotation.set(0, 0.994, 0);
+        box2.scale.set(1.970, 1.534, 3.955);
+        this.add(box2);
+        const box3 = new THREE.Mesh(geometry, boxMaterial);
+        box3.position.set(6.167, -0.16, 7.803);
+        box3.rotation.set(0, 0.561, 0);
+        box3.scale.set(3.927, 6.285, 3.687);
+        this.add(box3);
+        const box4 = new THREE.Mesh(geometry, boxMaterial);
+        box4.position.set(-2.017, 0.018, 6.124);
+        box4.rotation.set(0, 0.333, 0);
+        box4.scale.set(2.002, 4.566, 2.064);
+        this.add(box4);
+        const box5 = new THREE.Mesh(geometry, boxMaterial);
+        box5.position.set(2.291, -0.756, -2.621);
+        box5.rotation.set(0, -0.286, 0);
+        box5.scale.set(1.546, 1.552, 1.496);
+        this.add(box5);
+        const box6 = new THREE.Mesh(geometry, boxMaterial);
+        box6.position.set(-2.193, -0.369, -5.547);
+        box6.rotation.set(0, 0.516, 0);
+        box6.scale.set(3.875, 3.487, 2.986);
+        this.add(box6);
+        // -x_left
+        const light1 = new THREE.Mesh(geometry, this.createAreaLightMaterial(80));
+        light1.position.set(-14.0, 10.0, 8.0);
+        light1.scale.set(0.1, 2.5, 2.5);
+        this.add(light1);
+        // -x_right
+        const light2 = new THREE.Mesh(geometry, this.createAreaLightMaterial(80));
+        light2.position.set(-14.0, 14.0, -4.0);
+        light2.scale.set(0.1, 2.5, 2.5);
+        this.add(light2);
+        // +x only on light
+        const light3 = new THREE.Mesh(geometry, this.createAreaLightMaterial(23));
+        light3.position.set(14.0, 12.0, 0.0);
+        light3.scale.set(0.1, 5.0, 5.0);
+        this.add(light3);
+        // +z
+        const light4 = new THREE.Mesh(geometry, this.createAreaLightMaterial(16));
+        light4.position.set(0.0, 9.0, 14.0);
+        light4.scale.set(5.0, 5.0, 0.1);
+        this.add(light4);
+        // -z right
+        const light5 = new THREE.Mesh(geometry, this.createAreaLightMaterial(80));
+        light5.position.set(7.0, 8.0, -14.0);
+        light5.scale.set(2.5, 2.5, 0.1);
+        this.add(light5);
+        // -z left
+        const light6 = new THREE.Mesh(geometry, this.createAreaLightMaterial(80));
+        light6.position.set(-7.0, 16.0, -14.0);
+        light6.scale.set(2.5, 2.5, 0.1);
+        this.add(light6);
+        // +y
+        const light7 = new THREE.Mesh(geometry, this.createAreaLightMaterial(1));
+        light7.position.set(0.0, 20.0, 0.0);
+        light7.scale.set(0.1, 0.1, 0.1);
+        this.add(light7);
+    }
+    createAreaLightMaterial(intensity) {
+        const material = new THREE.MeshBasicMaterial();
+        material.color.setScalar(intensity);
+        return material;
+    }
+}
+
+// -----------------------------------------------------------------------------
+
+// import { Deflate } from "https://unpkg.com/browse/zlibjs@0.3.1/bin/deflate.min.js";
+
+const textEncoder = new TextEncoder();
+const tmpDataView = new DataView( new ArrayBuffer( 8 ) );
+
+var EXRExporter = function () {};
+
+EXRExporter.NO_COMPRESSION = 0;
+EXRExporter.ZIPS_COMPRESSION = 2;
+EXRExporter.ZIP_COMPRESSION = 3;
+
+EXRExporter.prototype = {
+
+	constructor: EXRExporter,
+
+	parse: function ( renderer, renderTarget, options ) {
+
+		if ( ! supported( renderer, renderTarget ) ) return undefined;
+
+		const info = buildInfo( renderer, renderTarget, options ),
+			dataBuffer = getPixelData( renderer, renderTarget, info ),
+			rawContentBuffer = reorganizeDataBuffer( dataBuffer, info ),
+			chunks = compressData( rawContentBuffer, info );
+
+		return fillData( chunks, info );
+
+	}
+
+};
+
+function supported( renderer, renderTarget ) {
+
+	if ( ! renderer || renderer.readRenderTargetPixels === undefined ) {
+
+		console.error( "EXRExporter.parse: Unsupported first parameter, expected instance of WebGLRenderer." );
+
+		return false;
+
+	}
+
+	if ( ! renderTarget || ! renderTarget.isWebGLRenderTarget ) {
+
+		console.error( "EXRExporter.parse: Unsupported second parameter, expected instance of WebGLRenderTarget." );
+
+		return false;
+
+	}
+
+	if ( renderTarget.texture.type != THREE.FloatType && renderTarget.texture.type != THREE.UnsignedByteType ) {
+
+		console.error( "EXRExporter.parse: Unsupported WebGLRenderTarget texture type." );
+
+		return false;
+
+	}
+
+	if ( renderTarget.texture.format != THREE.RGBAFormat ) {
+
+		console.error( "EXRExporter.parse: Unsupported WebGLRenderTarget texture format, expected RGBAFormat." );
+
+		return false;
+
+	}
+
+
+	return true;
+
+}
+
+function buildInfo( renderer, renderTarget, options ) {
+
+	options = options || {};
+
+	const compressionSizes = {
+		0: 1,
+		2: 1,
+		3: 16
+	};
+
+	const WIDTH = renderTarget.width,
+		HEIGHT = renderTarget.height,
+		TYPE = renderTarget.texture.type,
+		FORMAT = renderTarget.texture.format,
+		ENCODING = renderTarget.texture.encoding,
+		COMPRESSION = ( options.compression !== undefined ) ? options.compression : EXRExporter.ZIP_COMPRESSION,
+		EXPORTER_TYPE = ( options.type !== undefined ) ? options.type : THREE.HalfFloatType,
+		OUT_TYPE = ( EXPORTER_TYPE === THREE.FloatType ) ? 2 : 1,
+		COMPRESSION_SIZE = compressionSizes[ COMPRESSION ];
+
+	let EXTRA, NUM_CHANNELS;
+
+	switch ( ENCODING ) {
+
+		case THREE.RGBM7Encoding:
+			EXTRA = 7;
+			NUM_CHANNELS = 3;
+			break;
+
+		case THREE.RGBM16Encoding:
+			EXTRA = 16;
+			NUM_CHANNELS = 3;
+			break;
+
+		case THREE.RGBEEncoding:
+			NUM_CHANNELS = 3;
+			break;
+
+		default:
+			EXTRA = renderer.gammaFactor;
+			NUM_CHANNELS = 4;
+
+	}
+
+	return {
+		width: WIDTH,
+		height: HEIGHT,
+		type: TYPE,
+		format: FORMAT,
+		encoding: ENCODING,
+		extra: EXTRA,
+		compression: COMPRESSION,
+		blockLines: COMPRESSION_SIZE,
+		dataType: OUT_TYPE,
+		dataSize: 2 * OUT_TYPE,
+		numBlocks: Math.ceil( HEIGHT / COMPRESSION_SIZE ),
+		numInputChannels: 4,
+		numOutputChannels: NUM_CHANNELS,
+	};
+
+}
+
+function getPixelData( renderer, rtt, info ) {
+
+	let dataBuffer;
+
+	if ( info.type == THREE.FloatType ) {
+
+		dataBuffer = new Float32Array( info.width * info.height * info.numInputChannels );
+
+	} else {
+
+		dataBuffer = new Uint8Array( info.width * info.height * info.numInputChannels );
+
+	}
+
+	renderer.readRenderTargetPixels( rtt, 0, 0, info.width, info.height, dataBuffer );
+
+	return dataBuffer;
+
+}
+
+function reorganizeDataBuffer( inBuffer, info ) {
+
+	const w = info.width,
+		h = info.height,
+		dec = { r: 0, g: 0, b: 0, a: 0 },
+		offset = { value: 0 },
+		cOffset = ( info.numOutputChannels == 4 ) ? 1 : 0,
+		getValue = ( info.type == THREE.FloatType ) ? getFloat32 : getUint8,
+		setValue = ( info.dataType == 1 ) ? setFloat16 : setFloat32,
+		outBuffer = new Uint8Array( info.width * info.height * info.numOutputChannels * info.dataSize ),
+		dv = new DataView( outBuffer.buffer );
+
+	let decode;
+
+	switch ( info.encoding ) {
+
+		case THREE.LinearEncoding:
+			decode = decodeLinear;
+			break;
+
+		case THREE.sRGBEncoding:
+			decode = decodeSRGB;
+			break;
+
+		case THREE.GammaEncoding:
+			decode = decodeGamma;
+			break;
+
+		case THREE.RGBEEncoding:
+			decode = decodeRGBE;
+			break;
+
+		case THREE.RGBM7Encoding:
+		case THREE.RGBM16Encoding:
+			decode = decodeRGBM;
+			break;
+
+	}
+
+	for ( let y = 0; y < h; ++ y ) {
+
+		for ( let x = 0; x < w; ++ x ) {
+
+			let i = y * w * 4 + x * 4;
+
+			const r = getValue( inBuffer, i );
+			const g = getValue( inBuffer, i + 1 );
+			const b = getValue( inBuffer, i + 2 );
+			const a = getValue( inBuffer, i + 3 );
+
+			const line = ( h - y - 1 ) * w * ( 3 + cOffset ) * info.dataSize;
+
+			decode( dec, r, g, b, a, info.extra );
+
+			if ( info.numOutputChannels == 4 ) {
+
+				offset.value = line + x * info.dataSize;
+				setValue( dv, dec.a, offset );
+
+			}
+
+			offset.value = line + ( cOffset ) * w * info.dataSize + x * info.dataSize;
+			setValue( dv, dec.b, offset );
+
+			offset.value = line + ( 1 + cOffset ) * w * info.dataSize + x * info.dataSize;
+			setValue( dv, dec.g, offset );
+
+			offset.value = line + ( 2 + cOffset ) * w * info.dataSize + x * info.dataSize;
+			setValue( dv, dec.r, offset );
+
+		}
+
+	}
+
+	return outBuffer;
+
+}
+
+function compressData( inBuffer, info ) {
+
+	let compress,
+		tmpBuffer,
+		sum = 0;
+
+	const chunks = { data: new Array(), totalSize: 0 },
+		size = info.width * info.numOutputChannels * info.blockLines * info.dataSize;
+
+	switch ( info.compression ) {
+
+		case 0:
+			compress = compressNONE;
+			break;
+
+		case 2:
+		case 3:
+			compress = compressZIP;
+			break;
+
+	}
+
+	if ( info.compression != 0 ) {
+
+		tmpBuffer = new Uint8Array( size );
+
+	}
+
+	for ( let i = 0; i < info.numBlocks; ++ i ) {
+
+		const arr = inBuffer.subarray( size * i, size * ( i + 1 ) );
+
+		const block = compress( arr, tmpBuffer );
+
+		sum += block.length;
+
+		chunks.data.push( { dataChunk: block, size: block.length } );
+
+	}
+
+	chunks.totalSize = sum;
+
+	return chunks;
+
+}
+
+function compressNONE( data ) {
+
+	return data;
+
+}
+
+function compressZIP( data, tmpBuffer ) {
+
+	//
+	// Reorder the pixel data.
+	//
+
+	let t1 = 0,
+		t2 = Math.floor( ( data.length + 1 ) / 2 ),
+		s = 0;
+
+	const stop = data.length - 1;
+
+	while ( true ) {
+
+		if ( s > stop ) break;
+		tmpBuffer[ t1 ++ ] = data[ s ++ ];
+
+		if ( s > stop ) break;
+		tmpBuffer[ t2 ++ ] = data[ s ++ ];
+
+	}
+
+	//
+	// Predictor.
+	//
+
+	let p = tmpBuffer[ 0 ];
+
+	for ( let t = 1; t < tmpBuffer.length; t ++ ) {
+
+		const d = tmpBuffer[ t ] - p + ( 128 + 256 );
+		p = tmpBuffer[ t ];
+		tmpBuffer[ t ] = d;
+
+	}
+
+	// if ( typeof Deflate === 'undefined' ) {
+
+	// 	console.error( 'THREE.EXRLoader: External library Deflate.min.js required, obtain or import from https://github.com/imaya/zlib.js' );
+
+	// }
+
+	// const deflate = new Deflate( tmpBuffer ); // eslint-disable-line no-undef
+
+	return fflate.zlibSync(tmpBuffer); //deflate.compress();
+
+}
+
+function fillHeader( outBuffer, chunks, info ) {
+
+	const offset = { value: 0 };
+	const dv = new DataView( outBuffer.buffer );
+
+	setUint32( dv, 20000630, offset ); // magic
+	setUint32( dv, 2, offset ); // mask
+
+	// = HEADER =
+
+	setString( dv, 'compression', offset );
+	setString( dv, 'compression', offset );
+	setUint32( dv, 1, offset );
+	setUint8( dv, info.compression, offset );
+
+	setString( dv, 'screenWindowCenter', offset );
+	setString( dv, 'v2f', offset );
+	setUint32( dv, 8, offset );
+	setUint32( dv, 0, offset );
+	setUint32( dv, 0, offset );
+
+	setString( dv, 'screenWindowWidth', offset );
+	setString( dv, 'float', offset );
+	setUint32( dv, 4, offset );
+	setFloat32( dv, 1.0, offset );
+
+	setString( dv, 'pixelAspectRatio', offset );
+	setString( dv, 'float', offset );
+	setUint32( dv, 4, offset );
+	setFloat32( dv, 1.0, offset );
+
+	setString( dv, 'lineOrder', offset );
+	setString( dv, 'lineOrder', offset );
+	setUint32( dv, 1, offset );
+	setUint8( dv, 0, offset );
+
+	setString( dv, 'dataWindow', offset );
+	setString( dv, 'box2i', offset );
+	setUint32( dv, 16, offset );
+	setUint32( dv, 0, offset );
+	setUint32( dv, 0, offset );
+	setUint32( dv, info.width - 1, offset );
+	setUint32( dv, info.height - 1, offset );
+
+	setString( dv, 'displayWindow', offset );
+	setString( dv, 'box2i', offset );
+	setUint32( dv, 16, offset );
+	setUint32( dv, 0, offset );
+	setUint32( dv, 0, offset );
+	setUint32( dv, info.width - 1, offset );
+	setUint32( dv, info.height - 1, offset );
+
+	setString( dv, 'channels', offset );
+	setString( dv, 'chlist', offset );
+	setUint32( dv, info.numOutputChannels * 18 + 1, offset );
+
+	if ( info.numOutputChannels == 4 ) {
+
+		setString( dv, 'A', offset );
+		setUint32( dv, info.dataType, offset );
+		offset.value += 4;
+		setUint32( dv, 1, offset );
+		setUint32( dv, 1, offset );
+
+	}
+
+	setString( dv, 'B', offset );
+	setUint32( dv, info.dataType, offset );
+	offset.value += 4;
+	setUint32( dv, 1, offset );
+	setUint32( dv, 1, offset );
+
+	setString( dv, 'G', offset );
+	setUint32( dv, info.dataType, offset );
+	offset.value += 4;
+	setUint32( dv, 1, offset );
+	setUint32( dv, 1, offset );
+
+	setString( dv, 'R', offset );
+	setUint32( dv, info.dataType, offset );
+	offset.value += 4;
+	setUint32( dv, 1, offset );
+	setUint32( dv, 1, offset );
+
+	setUint8( dv, 0, offset );
+
+	// null-byte
+	setUint8( dv, 0, offset );
+
+	// = OFFSET TABLE =
+
+	let sum = offset.value + info.numBlocks * 8;
+
+	for ( let i = 0; i < chunks.data.length; ++ i ) {
+
+		setUint64( dv, sum, offset );
+
+		sum += chunks.data[ i ].size + 8;
+
+	}
+
+}
+
+function fillData( chunks, info ) {
+
+	// const magic = 4;
+	// const mask = 4;
+	// const compression = 12 + 12 + 4 + 1; // str name | compression type | i32 size | i8 content [ 0 ]
+	// const screenWindowCenter = 19 + 4 + 4 + 8; // str name | v2f type | i32 size | 2 * i32 content [0, 0]
+	// const screenWindowWidth = 18 + 6 + 4 + 4; // str name | float type | i32 size | i32 content [ 1 ]
+	// const pixelAspectRatio = 17 + 6 + 4 + 4; // str name | float type | i32 size | i32 content [ 1 ]
+	// const lineOrder = 10 + 10 + 4 + 1; // str name | lineOrder type | i32 size | i8 content [ 0 ]
+	// const dataWindow = 11 + 6 + 4 + 16; // str name | box2i type | i32 size | 4 * i32 content [0, 0, w, h]
+	// const displayWindow = 14 + 6 + 4 + 16; // str name | box2i type | i32 size | 4 * i32 content [0, 0, w, h]
+	// const channels = 9 + 7 + 4 + 1; // str name | chlist type | i32 size | chlist content
+	// const end = 1;
+	// 259 + 18 * chlist
+
+	const TableSize = info.numBlocks * 8,
+		HeaderSize = 259 + ( 18 * info.numOutputChannels ),
+		offset = { value: HeaderSize + TableSize },
+		outBuffer = new Uint8Array( HeaderSize + TableSize + chunks.totalSize + info.numBlocks * 8 ),
+		dv = new DataView( outBuffer.buffer );
+
+	fillHeader( outBuffer, chunks, info );
+
+	for ( let i = 0; i < chunks.data.length; ++ i ) {
+
+		const data = chunks.data[ i ].dataChunk;
+		const size = chunks.data[ i ].size;
+
+		setUint32( dv, i * info.blockLines, offset );
+		setUint32( dv, size, offset );
+
+		outBuffer.set( data, offset.value );
+		offset.value += size;
+
+	}
+
+	return outBuffer;
+
+}
+
+function decodeLinear( dec, r, g, b, a ) {
+
+	dec.r = r;
+	dec.g = g;
+	dec.b = b;
+	dec.a = a;
+
+}
+
+function decodeSRGB( dec, r, g, b, a ) {
+
+	dec.r = r > 0.04045 ? Math.pow( r * 0.9478672986 + 0.0521327014, 2.4 ) : r * 0.0773993808;
+	dec.g = g > 0.04045 ? Math.pow( g * 0.9478672986 + 0.0521327014, 2.4 ) : g * 0.0773993808;
+	dec.b = b > 0.04045 ? Math.pow( b * 0.9478672986 + 0.0521327014, 2.4 ) : b * 0.0773993808;
+	dec.a = a;
+
+}
+
+function decodeGamma( dec, r, g, b, a, gamma ) {
+
+	dec.r = Math.pow( r, gamma );
+	dec.g = Math.pow( g, gamma );
+	dec.b = Math.pow( b, gamma );
+	dec.a = a;
+
+}
+
+function decodeRGBE( dec, r, g, b, a ) {
+
+	const exp = Math.pow( 2, a * 255 - 128.0 );
+	dec.r = r * exp;
+	dec.g = g * exp;
+	dec.b = b * exp;
+
+}
+
+function decodeRGBM( dec, r, g, b, a, maxValue ) {
+
+	const exp = a * maxValue;
+	dec.r = r * exp;
+	dec.g = g * exp;
+	dec.b = b * exp;
+
+}
+
+// http://gamedev.stackexchange.com/questions/17326/conversion-of-a-number-from-single-precision-floating-point-representation-to-a/17410#17410
+function encodeFloat16( val ) {
+
+	/* This method is faster than the OpenEXR implementation (very often
+	 * used, eg. in Ogre), with the additional benefit of rounding, inspired
+	 * by James Tursa's half-precision code.
+	*/
+
+	tmpDataView.setFloat32( 0, val );
+	let x = tmpDataView.getInt32( 0 ),
+		m = ( x >> 12 ) & 0x07ff, /* Keep one extra bit for rounding */
+		e = ( x >> 23 ) & 0xff; /* Using int is faster here */
+
+	let bits = ( x >> 16 ) & 0x8000; /* Get the sign */
+
+	/* If zero, or denormal, or exponent underflows too much for a denormal
+		* half, return signed zero. */
+	if ( e < 103 ) return bits;
+
+	/* If NaN, return NaN. If Inf or exponent overflow, return Inf. */
+	if ( e > 142 ) {
+
+		bits |= 0x7c00;
+		/* If exponent was 0xff and one mantissa bit was set, it means NaN,
+					* not Inf, so make sure we set one mantissa bit too. */
+		bits |= ( ( e == 255 ) ? 0 : 1 ) && ( x & 0x007fffff );
+		return bits;
+
+	}
+
+	/* If exponent underflows but not too much, return a denormal */
+	if ( e < 113 ) {
+
+		m |= 0x0800;
+		/* Extra rounding may overflow and set mantissa to 0 and exponent
+			* to 1, which is OK. */
+		bits |= ( m >> ( 114 - e ) ) + ( ( m >> ( 113 - e ) ) & 1 );
+		return bits;
+
+	}
+
+	bits |= ( ( e - 112 ) << 10 ) | ( m >> 1 );
+	/* Extra rounding. An overflow will set mantissa to 0 and increment
+		* the exponent, which is OK. */
+	bits += m & 1;
+	return bits;
+
+}
+
+function setUint8( dv, value, offset ) {
+
+	dv.setUint8( offset.value, value );
+
+	offset.value += 1;
+
+}
+
+function setUint32( dv, value, offset ) {
+
+	dv.setUint32( offset.value, value, true );
+
+	offset.value += 4;
+
+}
+
+function setFloat16( dv, value, offset ) {
+
+	dv.setUint16( offset.value, encodeFloat16( value ), true );
+
+	offset.value += 2;
+
+}
+
+function setFloat32( dv, value, offset ) {
+
+	dv.setFloat32( offset.value, value, true );
+
+	offset.value += 4;
+
+}
+
+function setUint64( dv, value, offset ) {
+
+	dv.setBigUint64( offset.value, BigInt( value ), true );
+
+	offset.value += 8;
+
+}
+
+function setString( dv, string, offset ) {
+
+	const tmp = textEncoder.encode( string + '\0' );
+
+	for ( let i = 0; i < tmp.length; ++ i ) {
+
+		setUint8( dv, tmp[ i ], offset );
+
+	}
+
+}
+
+function getUint8( arr, i ) {
+
+	return arr[ i ] / 255;
+
+}
+
+function getFloat32( arr, i ) {
+
+	return arr[ i ];
+
+}
+
+export { EXRExporter };
+
+// -----------------------------------------------------------------------------
+
+
+var vertexShader = `
+attribute vec3 position;
+attribute vec2 uv;
+uniform mat4 projectionMatrix;
+uniform mat4 modelViewMatrix;
+varying vec2 vUv;
+void main()  {
+vUv = vec2( 1.- uv.x, 1.- uv.y );
+gl_Position = projectionMatrix * modelViewMatrix * vec4( position, 1.0 );
+}
+`;
+
+var fragmentShader = `
+precision mediump float;
+uniform sampler2D map;
+varying vec2 vUv;
+#define M_PI 3.1415926535897932384626433832795
+
+${ _getEncodings() }
+
+			#define ENVMAP_TYPE_CUBE_UV
+			#include <cube_uv_reflection_fragment>
+
+void main()  {
+vec2 uv = vUv;
+float longitude = uv.x * 2. * M_PI - M_PI + M_PI / 2.;
+float latitude = uv.y * M_PI;
+vec3 dir = vec3(
+  - sin( longitude ) * sin( latitude ),
+  cos( latitude ),
+  - cos( longitude ) * sin( latitude )
+);
+normalize( dir );
+gl_FragColor = vec4( 0.0, 0.0, 0.0, 1.0 );
+				gl_FragColor.rgb = bilinearCubeUV( map, dir, 8.0 );
+        gl_FragColor = linearToOutputTexel( gl_FragColor );
+}
+`;
+
+function _getEncodings() {
+
+return /* glsl */`
+
+  int inputEncoding = 2;
+  int outputEncoding = 2;
+
+  #include <encodings_pars_fragment>
+
+  vec4 inputTexelToLinear( vec4 value ) {
+
+    if ( inputEncoding == 0 ) {
+
+      return value;
+
+    } else if ( inputEncoding == 1 ) {
+
+      return sRGBToLinear( value );
+
+    } else if ( inputEncoding == 2 ) {
+
+      return RGBEToLinear( value );
+
+    } else if ( inputEncoding == 3 ) {
+
+      return RGBMToLinear( value, 7.0 );
+
+    } else if ( inputEncoding == 4 ) {
+
+      return RGBMToLinear( value, 16.0 );
+
+    } else if ( inputEncoding == 5 ) {
+
+      return RGBDToLinear( value, 256.0 );
+
+    } else {
+
+      return GammaToLinear( value, 2.2 );
+
+    }
+
+  }
+
+  vec4 linearToOutputTexel( vec4 value ) {
+
+    if ( outputEncoding == 0 ) {
+
+      return value;
+
+    } else if ( outputEncoding == 1 ) {
+
+      return LinearTosRGB( value );
+
+    } else if ( outputEncoding == 2 ) {
+
+      return LinearToRGBE( value );
+
+    } else if ( outputEncoding == 3 ) {
+
+      return LinearToRGBM( value, 7.0 );
+
+    } else if ( outputEncoding == 4 ) {
+
+      return LinearToRGBM( value, 16.0 );
+
+    } else if ( outputEncoding == 5 ) {
+
+      return LinearToRGBD( value, 256.0 );
+
+    } else {
+
+      return LinearToGamma( value, 2.2 );
+
+    }
+
+  }
+
+  vec4 envMapTexelToLinear( vec4 color ) {
+
+    return inputTexelToLinear( color );
+
+  }
+`;
+}
+
+function CubemapToEquirectangular( renderer, provideCubeCamera ) {
+
+this.width = 1;
+this.height = 1;
+
+this.renderer = renderer;
+
+this.material = new THREE.RawShaderMaterial( {
+  uniforms: {
+    map: { type: 't', value: null }
+  },
+  vertexShader: vertexShader,
+  fragmentShader: fragmentShader,
+  side: THREE.DoubleSide,
+  transparent: true
+} );
+
+this.scene = new THREE.Scene();
+this.quad = new THREE.Mesh(
+  new THREE.PlaneBufferGeometry( 1, 1 ),
+  this.material
+);
+this.scene.add( this.quad );
+this.camera = new THREE.OrthographicCamera( 1 / - 2, 1 / 2, 1 / 2, 1 / - 2, -10000, 10000 );
+
+this.canvas = document.createElement( 'canvas' );
+this.ctx = this.canvas.getContext( '2d' );
+
+this.cubeCamera = null;
+this.attachedCamera = null;
+
+this.setSize( 1024, 512 );
+
+var gl = this.renderer.getContext();
+this.cubeMapSize = gl.getParameter( gl.MAX_CUBE_MAP_TEXTURE_SIZE )
+
+if( provideCubeCamera ) {
+  this.getCubeCamera( 2048 )
+}
+
+}
+
+CubemapToEquirectangular.prototype.setSize = function( width, height ) {
+
+this.width = width;
+this.height = height;
+
+this.quad.scale.set( this.width, this.height, 1 );
+
+this.camera.left = this.width / - 2;
+this.camera.right = this.width / 2;
+this.camera.top = this.height / 2;
+this.camera.bottom = this.height / - 2;
+
+this.camera.updateProjectionMatrix();
+
+this.output = new THREE.WebGLRenderTarget( this.width, this.height, {
+  minFilter: THREE.LinearFilter,
+  magFilter: THREE.LinearFilter,
+  wrapS: THREE.ClampToEdgeWrapping,
+  wrapT: THREE.ClampToEdgeWrapping,
+  format: THREE.RGBAFormat,
+  encoding: THREE.RGBEEncoding,
+  type: THREE.UnsignedByteType
+});
+
+this.canvas.width = this.width;
+this.canvas.height = this.height;
+
+}
+
+CubemapToEquirectangular.prototype.getCubeCamera = function( size ) {
+
+var cubeMapSize = Math.min( this.cubeMapSize, size );
+
+var options = { format: THREE.RGBAFormat, magFilter: THREE.LinearFilter, minFilter: THREE.LinearFilter };
+
+this.cubeCamera = new THREE.CubeCamera( .1, 1000, new THREE.WebGLRenderTargetCube( cubeMapSize, cubeMapSize, options ) );
+
+return this.cubeCamera;
+
+}
+
+CubemapToEquirectangular.prototype.attachCubeCamera = function( camera ) {
+
+this.getCubeCamera();
+this.attachedCamera = camera;
+
+}
+
+CubemapToEquirectangular.prototype.convert = function( renderTarget, download ) {
+
+this.quad.material.uniforms.map.value = renderTarget.texture;
+this.renderer.render( this.scene, this.camera, this.output, true );
+
+const exporter = new EXRExporter();
+const EXR = exporter.parse( this.renderer, this.output );
+
+var a = document.createElement('a');
+  var file = new Blob([EXR], {type: 'image/aces'});
+  a.href = URL.createObjectURL(file);
+  a.download = 'neutral.exr';
+  a.click();
+
+// downloadFile( EXR );
+
+// var pixels = new Uint8Array( 4 * this.width * this.height );
+// this.renderer.readRenderTargetPixels( this.output, 0, 0, this.width, this.height, pixels );
+
+// var imageData = new ImageData( new Uint8ClampedArray( pixels ), this.width, this.height );
+
+// if( download !== false ) {
+//   this.download( imageData );
+// }
+
+// return imageData
+
+};
+
+CubemapToEquirectangular.prototype.download = function( imageData ) {
+
+this.ctx.putImageData( imageData, 0, 0 );
+
+this.canvas.toBlob( function( blob ) {
+
+  var url = URL.createObjectURL(blob);
+  var fileName = 'pano-' + document.title + '-' + Date.now() + '.png';
+  var anchor = document.createElement( 'a' );
+  anchor.href = url;
+  anchor.setAttribute("download", fileName);
+  anchor.className = "download-js-link";
+  anchor.innerHTML = "downloading...";
+  anchor.style.display = "none";
+  document.body.appendChild(anchor);
+  setTimeout(function() {
+    anchor.click();
+    document.body.removeChild(anchor);
+  }, 1 );
+
+}, 'image/png' );
+
+};
+
+CubemapToEquirectangular.prototype.update = function( camera, scene ) {
+
+var autoClear = this.renderer.autoClear;
+this.renderer.autoClear = true;
+this.cubeCamera.position.copy( camera.position );
+this.cubeCamera.updateCubeMap( this.renderer, scene );
+this.renderer.autoClear = autoClear;
+
+this.convert( this.cubeCamera );
+
+}
+
+// if( typeof exports !== 'undefined' ) {
+// if( typeof module !== 'undefined' && module.exports ) {
+//   exports = module.exports = CubemapToEquirectangular
+// }
+// exports.CubemapToEquirectangular = CubemapToEquirectangular
+// }
+// else {
+// root.CubemapToEquirectangular = CubemapToEquirectangular
+// }
+
+
+// -----------------------------------------------------------------------------
+
+const renderer = new THREE.WebGL1Renderer({
+        alpha: true,
+        antialias: true
+      });
+      renderer.autoClear = true;
+      renderer.outputEncoding = THREE.GammaEncoding;
+      renderer.physicallyCorrectLights = true;
+var scene = new EnvironmentSceneAlt();
+var pmremGenerator = new THREE.PMREMGenerator(renderer);
+var pmrem = pmremGenerator.fromScene(scene, 0.04);
+var equiUnmanaged = new CubemapToEquirectangular( renderer, false );
+equiUnmanaged.convert( pmrem );
+
+    </script>
+</body>
+</html>
