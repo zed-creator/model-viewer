@@ -621,7 +621,7 @@ function decodeGamma( dec, r, g, b, a, gamma ) {
 
 function decodeRGBE( dec, r, g, b, a ) {
 
-	const exp = Math.pow( 2, a * 255 - 128.0 );
+	const exp = Math.pow( 2, a * 255 - 128.0 )*2;
 	dec.r = r * exp;
 	dec.g = g * exp;
 	dec.b = b * exp;
@@ -972,7 +972,9 @@ this.attachedCamera = camera;
 CubemapToEquirectangular.prototype.convert = function( renderTarget, download ) {
 
 this.quad.material.uniforms.map.value = renderTarget.texture;
-this.renderer.render( this.scene, this.camera, this.output, true );
+this.renderer.setRenderTarget(this.output);
+this.renderer.clear();
+this.renderer.render( this.scene, this.camera );
 
 const exporter = new EXRExporter();
 const EXR = exporter.parse( this.renderer, this.output );
