@@ -1,0 +1,9 @@
+commit 99ffc77924ab3647fcc5e18cfe5275cb7b6257cf
+Author: Emmett Lalish <elalish@google.com>
+Date:   Thu Jul 8 10:14:44 2021 -0700
+
+    Three.js r130 (#2563)
+    
+    * updated to r130
+    
+    * removed transparency doubling now that three's renderer takes care of this
